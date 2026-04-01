@@ -1,39 +1,60 @@
 import { useEffect, useState } from "react"
 import axios from "../api/axios"
+import Navbar from "../components/Navbar"
+import CourseCard from "../components/CourseCard"
+import CourseForm from "../components/CourseForm"
+import Loader from "../components/Loader"
 
 export default function Dashboard() {
   const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchCourses = async () => {
+    setLoading(true)
+    const res = await axios.get("/courses")
+    setCourses(res.data)
+    setLoading(false)
+  }
 
   useEffect(() => {
     fetchCourses()
   }, [])
 
-  const fetchCourses = async () => {
-    const res = await axios.get("/courses")
-    setCourses(res.data)
+  const createCourse = async (data) => {
+    await axios.post("/courses", data)
+    fetchCourses()
   }
 
   const deleteCourse = async (id) => {
-    if (!confirm("Are you sure?")) return
-
+    if (!confirm("Delete this course?")) return
     await axios.delete(`/courses/${id}`)
     fetchCourses()
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Courses</h1>
+    <div>
+      <Navbar />
 
-      {courses.map(course => (
-        <div key={course.id} className="border p-4 mb-3 rounded">
-          <h2 className="font-bold">{course.name}</h2>
-
-          <button className="text-red-500"
-            onClick={()=>deleteCourse(course.id)}>
-            Delete
-          </button>
+      <div className="p-6 grid grid-cols-2 gap-6">
+        <div>
+          <h2 className="font-bold mb-2">Add Course</h2>
+          <CourseForm onSubmit={createCourse} />
         </div>
-      ))}
+
+        <div>
+          <h2 className="font-bold mb-2">All Courses</h2>
+
+          {loading ? <Loader /> : (
+            courses.map(course => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                onDelete={deleteCourse}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </div>
   )
 }
